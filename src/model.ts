@@ -27,12 +27,16 @@ export interface FrameDocument {
   variants: CropVariant[];
 }
 
+/** 裁切方案数量上限：界面计数、列表展示与保存逻辑统一以此为准。 */
+export const MAX_VARIANTS = 8;
+
 export interface ViewState {
   phase: Phase;
   document: FrameDocument;
   compareOpen: boolean;
   notice: string;
   error: string | null;
+  selectedVariantId: string | null;
 }
 
 export const DEFAULT_CROP: CropVariant = {

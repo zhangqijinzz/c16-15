@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FrameSenseViewModel } from '../viewModel';
-import { EMPTY_DOCUMENT, type FrameDocument, type ImageAsset } from '../model';
+import { EMPTY_DOCUMENT, MAX_VARIANTS, type FrameDocument, type ImageAsset } from '../model';
 import type { FrameRepository } from '../repository';
 import type { ImageService } from '../service';
 
@@ -48,5 +48,65 @@ describe('FrameSenseViewModel', () => {
     expect(vm.getSnapshot().phase).toBe('error');
     expect(vm.getSnapshot().document.image).not.toBeNull();
     expect(vm.getSnapshot().error).toContain('本地保存失败');
+  });
+
+  it('blocks the ninth save instead of silently dropping the earliest variant', () => {
+    vm.loadDemo();
+    for (let i = 0; i < MAX_VARIANTS; i += 1) {
+      vm.markSubject(i / 10, i / 10);
+      vm.saveVariant();
+    }
+    const before = vm.getSnapshot().document.variants;
+    expect(before).toHaveLength(MAX_VARIANTS);
+    const firstId = before[0].id;
+
+    vm.markSubject(0.9, 0.9);
+    vm.saveVariant();
+
+    const after = vm.getSnapshot().document.variants;
+    expect(after).toHaveLength(MAX_VARIANTS);
+    expect(after[0].id).toBe(firstId);
+    expect(vm.getSnapshot().notice).toContain(String(MAX_VARIANTS));
+  });
+
+  it('assigns unique ids even when saving twice within the same millisecond', () => {
+    vm.loadDemo();
+    vm.saveVariant();
+    vm.saveVariant();
+    const ids = vm.getSnapshot().document.variants.map((variant) => variant.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('highlights only the variant selected by id, not geometrically identical siblings', () => {
+    vm.loadDemo();
+    vm.saveVariant();
+    vm.saveVariant();
+    const variants = vm.getSnapshot().document.variants;
+    expect(variants[0].id).not.toBe(variants[1].id);
+    vm.selectVariant(variants[0].id);
+    expect(vm.getSnapshot().selectedVariantId).toBe(variants[0].id);
+  });
+
+  it('lets the user replace one variant and delete a variant to free a slot', () => {
+    vm.loadDemo();
+    for (let i = 0; i < MAX_VARIANTS; i += 1) {
+      vm.markSubject(i / 10, i / 10);
+      vm.saveVariant();
+    }
+    const target = vm.getSnapshot().document.variants[2];
+
+    vm.replaceVariant(target.id);
+    const replaced = vm.getSnapshot().document.variants;
+    expect(replaced).toHaveLength(MAX_VARIANTS);
+    expect(replaced.some((variant) => variant.id === target.id)).toBe(false);
+    expect(vm.getSnapshot().selectedVariantId).toBe(replaced[2].id);
+
+    vm.deleteVariant(replaced[2].id);
+    expect(vm.getSnapshot().document.variants).toHaveLength(MAX_VARIANTS - 1);
+    expect(vm.getSnapshot().selectedVariantId).toBeNull();
+
+    vm.markSubject(0.5, 0.5);
+    vm.saveVariant();
+    expect(vm.getSnapshot().document.variants).toHaveLength(MAX_VARIANTS);
   });
 });

@@ -5,7 +5,7 @@ import { Toolbar } from './components/Toolbar';
 import { VariantList } from './components/VariantList';
 import { LocalFrameRepository } from './repository';
 import { BrowserImageService, BrowserStorageService } from './service';
-import type { CropVariant, ImageAsset, Ratio } from './model';
+import { MAX_VARIANTS, type CropVariant, type ImageAsset, type Ratio } from './model';
 import { useFrameSenseViewModel } from './viewModel';
 
 const repository = new LocalFrameRepository(new BrowserStorageService());
@@ -32,9 +32,9 @@ export default function App() {
           {!document.image ? <EmptyState onDemo={() => viewModel.loadDemo()} /> : state.compareOpen ? <Comparison image={document.image} variants={document.variants} /> : <CanvasStage image={document.image} guides={document.guides} crop={document.crop} subject={document.subject} onSubject={(x, y) => viewModel.markSubject(x, y)} onMoveCrop={(dx, dy) => viewModel.moveCrop(dx, dy)} onResizeCrop={(width, height) => viewModel.resizeCrop(width, height)} />}
           {document.image && !state.compareOpen && <div className="editor-footer"><span><b>当前比例</b> {document.crop.ratio === 'free' ? '自由裁切' : document.crop.ratio}</span><span><b>辅助层</b> {Object.values(document.guides).filter(Boolean).length} 个开启</span><span><b>主体</b> {document.subject ? '已标记' : '点击画面添加'}</span></div>}
         </section>
-        {document.image && <VariantList variants={document.variants} image={document.image} current={document.crop} onSave={() => viewModel.saveVariant()} onSelect={(id) => viewModel.selectVariant(id)} />}
+        {document.image && <VariantList variants={document.variants} image={document.image} selectedId={state.selectedVariantId} onSave={() => viewModel.saveVariant()} onSelect={(id) => viewModel.selectVariant(id)} onReplace={(id) => viewModel.replaceVariant(id)} onDelete={(id) => viewModel.deleteVariant(id)} />}
       </main>
-      <footer className="footer"><span>FrameSense · 原图不会被修改</span><span>本地自动保存 · {document.variants.length}/8 方案</span></footer>
+      <footer className="footer"><span>FrameSense · 原图不会被修改</span><span>本地自动保存 · {document.variants.length}/{MAX_VARIANTS} 方案</span></footer>
     </div>
   );
 }
