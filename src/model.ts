@@ -31,9 +31,14 @@ export interface ViewState {
   phase: Phase;
   document: FrameDocument;
   compareOpen: boolean;
+  replacePickerOpen: boolean;
+  selectedVariantId: string | null;
   notice: string;
   error: string | null;
 }
+
+// 裁切方案上限：界面计数、列表展示与保存逻辑统一以此为准
+export const MAX_VARIANTS = 8;
 
 export const DEFAULT_CROP: CropVariant = {
   id: 'current',
